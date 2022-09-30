@@ -1,0 +1,11 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: game-config-balloons
+  namespace: default
+data:
+  game.properties: |
+    friends=balloons
+  ui.properties: |
+    color.friend=green

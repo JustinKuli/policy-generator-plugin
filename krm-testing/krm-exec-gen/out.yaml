@@ -1,0 +1,138 @@
+apiVersion: apps.open-cluster-management.io/v1
+kind: PlacementRule
+metadata:
+  name: placement-aliens-cm-pol
+  namespace: jkulikau
+spec:
+  clusterSelector:
+    matchExpressions: []
+---
+apiVersion: apps.open-cluster-management.io/v1
+kind: PlacementRule
+metadata:
+  name: placement-nested
+  namespace: jkulikau
+spec:
+  clusterSelector:
+    matchExpressions: []
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: PlacementBinding
+metadata:
+  name: binding-aliens-cm-pol
+  namespace: jkulikau
+placementRef:
+  apiGroup: apps.open-cluster-management.io
+  kind: PlacementRule
+  name: placement-aliens-cm-pol
+subjects:
+- apiGroup: policy.open-cluster-management.io
+  kind: Policy
+  name: aliens-cm-pol
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: PlacementBinding
+metadata:
+  name: binding-nested
+  namespace: jkulikau
+placementRef:
+  apiGroup: apps.open-cluster-management.io
+  kind: PlacementRule
+  name: placement-nested
+subjects:
+- apiGroup: policy.open-cluster-management.io
+  kind: Policy
+  name: nested
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: Policy
+metadata:
+  annotations:
+    policy.open-cluster-management.io/categories: jkulikau test
+    policy.open-cluster-management.io/controls: CM-2 Baseline Configuration
+    policy.open-cluster-management.io/standards: NIST SP 800-53
+  name: aliens-cm-pol
+  namespace: jkulikau
+spec:
+  disabled: false
+  policy-templates:
+  - objectDefinition:
+      apiVersion: policy.open-cluster-management.io/v1
+      kind: ConfigurationPolicy
+      metadata:
+        name: aliens-cm-pol
+      spec:
+        evaluationInterval:
+          compliant: 1h
+          noncompliant: 2m
+        object-templates:
+        - complianceType: musthave
+          objectDefinition:
+            apiVersion: v1
+            data:
+              game.properties: |
+                enemies=aliens
+              ui.properties: |
+                color.good=purple
+            kind: ConfigMap
+            metadata:
+              name: game-config-aliens
+              namespace: default
+        remediationAction: inform
+        severity: low
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: Policy
+metadata:
+  annotations:
+    policy.open-cluster-management.io/categories: jkulikau test
+    policy.open-cluster-management.io/controls: CM-2 Baseline Configuration
+    policy.open-cluster-management.io/standards: NIST SP 800-53
+  name: nested
+  namespace: jkulikau
+spec:
+  disabled: false
+  policy-templates:
+  - objectDefinition:
+      apiVersion: policy.open-cluster-management.io/v1
+      kind: ConfigurationPolicy
+      metadata:
+        name: nested
+      spec:
+        evaluationInterval:
+          compliant: 1h
+          noncompliant: 2m
+        object-templates:
+        - complianceType: musthave
+          objectDefinition:
+            apiVersion: v1
+            kind: Namespace
+            metadata:
+              labels:
+                openshift.io/cluster-monitoring: "true"
+              name: open-cluster-management
+        - complianceType: musthave
+          objectDefinition:
+            apiVersion: operators.coreos.com/v1
+            kind: OperatorGroup
+            metadata:
+              name: open-cluster-management
+              namespace: open-cluster-management
+            spec:
+              targetNamespaces:
+              - open-cluster-management
+        - complianceType: musthave
+          objectDefinition:
+            apiVersion: operators.coreos.com/v1alpha1
+            kind: Subscription
+            metadata:
+              name: advanced-cluster-management
+              namespace: open-cluster-management
+            spec:
+              channel: release-2.5
+              installPlanApproval: Automatic
+              name: advanced-cluster-management
+              source: redhat-operators
+              sourceNamespace: openshift-marketplace
+        remediationAction: inform
+        severity: low

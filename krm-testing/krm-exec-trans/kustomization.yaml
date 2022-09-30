@@ -1,0 +1,9 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- configmap-aliens.yaml
+- configmap-balloons.yaml
+# For some reason, this gives an error (like `Error: couldn't execute function: chdir /private/var/folders/m_/k98t8_dd3yggctk0xr8m9b9m0000gn/T/kustomize-026314317/advanced-cluster-management/operator/base: no such file or directory`)
+# - github.com/redhat-cop/gitops-catalog/advanced-cluster-management/operator/overlays/release-2.5?ref=main
+transformers:
+- policyGenerator.yaml

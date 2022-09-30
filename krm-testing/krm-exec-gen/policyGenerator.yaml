@@ -1,0 +1,22 @@
+apiVersion: policy.open-cluster-management.io/v1
+kind: PolicyGenerator
+metadata:
+  name: krm-cont-pol-gen
+  annotations:
+    config.kubernetes.io/function: |
+      exec:
+        path: ./PolicyGenerator
+policyDefaults:
+  categories:
+    - "jkulikau test"
+  evaluationInterval:
+    compliant: 1h
+    noncompliant: 2m
+  namespace: jkulikau
+policies:
+  - name: aliens-cm-pol
+    manifests:
+      - path: ./configmap-aliens.yaml
+  - name: nested
+    manifests:
+      - path: ./nested

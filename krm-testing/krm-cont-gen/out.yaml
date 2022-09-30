@@ -1,0 +1,131 @@
+apiVersion: apps.open-cluster-management.io/v1
+kind: PlacementRule
+metadata:
+  name: placement-cms-pol
+  namespace: jkulikau
+spec:
+  clusterSelector:
+    matchExpressions: []
+---
+apiVersion: apps.open-cluster-management.io/v1
+kind: PlacementRule
+metadata:
+  name: placement-folder-pol
+  namespace: jkulikau
+spec:
+  clusterSelector:
+    matchExpressions: []
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: PlacementBinding
+metadata:
+  name: binding-cms-pol
+  namespace: jkulikau
+placementRef:
+  apiGroup: apps.open-cluster-management.io
+  kind: PlacementRule
+  name: placement-cms-pol
+subjects:
+- apiGroup: policy.open-cluster-management.io
+  kind: Policy
+  name: cms-pol
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: PlacementBinding
+metadata:
+  name: binding-folder-pol
+  namespace: jkulikau
+placementRef:
+  apiGroup: apps.open-cluster-management.io
+  kind: PlacementRule
+  name: placement-folder-pol
+subjects:
+- apiGroup: policy.open-cluster-management.io
+  kind: Policy
+  name: folder-pol
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: Policy
+metadata:
+  annotations:
+    policy.open-cluster-management.io/categories: jkulikau test
+    policy.open-cluster-management.io/controls: CM-2 Baseline Configuration
+    policy.open-cluster-management.io/standards: NIST SP 800-53
+  name: cms-pol
+  namespace: jkulikau
+spec:
+  disabled: false
+  policy-templates:
+  - objectDefinition:
+      apiVersion: policy.open-cluster-management.io/v1
+      kind: ConfigurationPolicy
+      metadata:
+        name: cms-pol
+      spec:
+        evaluationInterval:
+          compliant: 1h
+          noncompliant: 2m
+        object-templates:
+        - complianceType: musthave
+          objectDefinition:
+            apiVersion: v1
+            data:
+              game.properties: |
+                enemies=idk
+              ui.properties: |
+                color.good=clown
+            kind: ConfigMap
+            metadata:
+              name: game-config-carnival
+              namespace: default
+        remediationAction: inform
+        severity: low
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: Policy
+metadata:
+  annotations:
+    policy.open-cluster-management.io/categories: jkulikau test
+    policy.open-cluster-management.io/controls: CM-2 Baseline Configuration
+    policy.open-cluster-management.io/standards: NIST SP 800-53
+  name: folder-pol
+  namespace: jkulikau
+spec:
+  disabled: false
+  policy-templates:
+  - objectDefinition:
+      apiVersion: policy.open-cluster-management.io/v1
+      kind: ConfigurationPolicy
+      metadata:
+        name: folder-pol
+      spec:
+        evaluationInterval:
+          compliant: 1h
+          noncompliant: 2m
+        object-templates:
+        - complianceType: musthave
+          objectDefinition:
+            apiVersion: v1
+            data:
+              game.properties: |
+                enemies=aliens
+              ui.properties: |
+                color.good=purple
+            kind: ConfigMap
+            metadata:
+              name: game-config-aliens
+              namespace: default
+        - complianceType: musthave
+          objectDefinition:
+            apiVersion: v1
+            data:
+              game.properties: |
+                friends=balloons
+              ui.properties: |
+                color.friend=green
+            kind: ConfigMap
+            metadata:
+              name: game-config-balloons
+              namespace: default
+        remediationAction: inform
+        severity: low

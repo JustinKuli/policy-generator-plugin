@@ -25,19 +25,28 @@ import (
 // be read.
 func getManifests(policyConf *types.PolicyConfig) ([][]map[string]interface{}, error) {
 	manifests := [][]map[string]interface{}{}
-	hasKustomize := map[string]bool{}
 
 	for _, manifest := range policyConf.Manifests {
-		manifestPaths := []string{}
 		manifestFiles := []map[string]interface{}{}
 		readErr := fmt.Errorf("failed to read the manifest path %s", manifest.Path)
 
-		manifestPathInfo, err := os.Stat(manifest.Path)
+		var manifestFD *os.File
+
+		if manifest.Path == "stdin" {
+			manifestFD = os.Stdin
+		} else {
+			var err error // prevent shadowing manifestFD
+
+			manifestFD, err = os.Open(manifest.Path)
+			if err != nil {
+				return nil, readErr
+			}
+		}
+
+		manifestPathInfo, err := manifestFD.Stat()
 		if err != nil {
 			return nil, readErr
 		}
-
-		resolvedFiles := []string{}
 
 		if manifestPathInfo.IsDir() {
 			files, err := ioutil.ReadDir(manifest.Path)
@@ -45,34 +54,58 @@ func getManifests(policyConf *types.PolicyConfig) ([][]map[string]interface{}, e
 				return nil, readErr
 			}
 
+			foundKustomization := false
+
+			// Handle when a Kustomization directory is specified
 			for _, f := range files {
-				if f.IsDir() {
-					continue
-				}
-
-				filepath := f.Name()
-				ext := path.Ext(filepath)
-
-				if ext != ".yaml" && ext != ".yml" {
-					continue
-				}
-				// Handle when a Kustomization directory is specified
-				_, filename := path.Split(filepath)
+				_, filename := path.Split(f.Name())
 				if filename == "kustomization.yml" || filename == "kustomization.yaml" {
-					hasKustomize[manifest.Path] = true
-					resolvedFiles = []string{manifest.Path}
+					manifestFile, err := processKustomizeDir(manifest.Path)
+					if err != nil {
+						return nil, err
+					}
+
+					manifestFiles = *manifestFile
+					foundKustomization = true
 
 					break
 				}
-
-				yamlPath := path.Join(manifest.Path, f.Name())
-				resolvedFiles = append(resolvedFiles, yamlPath)
 			}
 
-			manifestPaths = append(manifestPaths, resolvedFiles...)
+			if !foundKustomization {
+				for _, f := range files {
+					if f.IsDir() {
+						continue
+					}
+
+					ext := path.Ext(f.Name())
+
+					if ext != ".yaml" && ext != ".yml" {
+						continue
+					}
+
+					manifestPath := path.Join(manifest.Path, f.Name())
+
+					manifestFile, err := unmarshalManifestFile(manifestPath)
+					if err != nil {
+						return nil, err
+					}
+
+					if len(*manifestFile) == 0 {
+						continue
+					}
+
+					manifestFiles = append(manifestFiles, *manifestFile...)
+				}
+			}
 		} else {
 			// Unmarshal the manifest in order to check for metadata patch replacement
-			manifestFile, err := unmarshalManifestFile(manifest.Path)
+			manifestBytes, err := io.ReadAll(manifestFD)
+			if err != nil {
+				return nil, err
+			}
+
+			manifestFile, err := unmarshalManifestBytes(manifestBytes)
 			if err != nil {
 				return nil, err
 			}
@@ -98,28 +131,7 @@ func getManifests(policyConf *types.PolicyConfig) ([][]map[string]interface{}, e
 				}
 			}
 
-			manifestFiles = append(manifestFiles, *manifestFile...)
-		}
-
-		for _, manifestPath := range manifestPaths {
-			var manifestFile *[]map[string]interface{}
-			var err error
-
-			if hasKustomize[manifestPath] {
-				manifestFile, err = processKustomizeDir(manifestPath)
-			} else {
-				manifestFile, err = unmarshalManifestFile(manifestPath)
-			}
-
-			if err != nil {
-				return nil, err
-			}
-
-			if len(*manifestFile) == 0 {
-				continue
-			}
-
-			manifestFiles = append(manifestFiles, *manifestFile...)
+			manifestFiles = *manifestFile
 		}
 
 		if len(manifest.Patches) > 0 {

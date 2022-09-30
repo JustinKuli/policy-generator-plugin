@@ -1,0 +1,18 @@
+apiVersion: policy.open-cluster-management.io/v1
+kind: PolicyGenerator
+metadata:
+  name: krm-cont-pol-gen
+policyDefaults:
+  categories:
+    - "jkulikau test"
+  evaluationInterval:
+    compliant: 1h
+    noncompliant: 2m
+  namespace: jkulikau
+policies:
+  - name: aliens-cm-pol
+    manifests:
+      - path: ./configmap-aliens.yaml
+  - name: balloons-cm-pol
+    manifests:
+      - path: ./configmap-balloons.yaml

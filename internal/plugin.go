@@ -41,7 +41,8 @@ type Plugin struct {
 	APIVersion string `json:"apiVersion,omitempty" yaml:"apiVersion,omitempty"`
 	Kind       string `json:"kind,omitempty" yaml:"kind,omitempty"`
 	Metadata   struct {
-		Name string `json:"name,omitempty" yaml:"name,omitempty"`
+		Name        string            `json:"name,omitempty" yaml:"name,omitempty"`
+		Annotations map[string]string `json:"annotations,omitempty" yaml:"annotations,omitempty"`
 	} `json:"metadata,omitempty" yaml:"metadata,omitempty"`
 	PlacementBindingDefaults struct {
 		Name string `json:"name,omitempty" yaml:"name,omitempty"`
@@ -773,11 +774,11 @@ func (p *Plugin) assertValidConfig() error {
 			}
 		}
 
-		if len(policy.Manifests) == 0 {
-			return fmt.Errorf(
-				"each policy must have at least one manifest, but found none in policy %s", policy.Name,
-			)
-		}
+		// if len(policy.Manifests) == 0 {
+		// 	return fmt.Errorf(
+		// 		"each policy must have at least one manifest, but found none in policy %s", policy.Name,
+		// 	)
+		// }
 
 		for j := range policy.Manifests {
 			manifest := &policy.Manifests[j]
